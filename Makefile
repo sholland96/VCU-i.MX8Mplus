@@ -47,7 +47,8 @@ C_SRCS := \
     Drivers/MIMX8ML8/drivers/fsl_clock.c \
     Drivers/MIMX8ML8/drivers/fsl_flexcan.c \
     Drivers/MIMX8ML8/drivers/fsl_gpio.c \
-    Drivers/MIMX8ML8/drivers/fsl_rdc.c
+    Drivers/MIMX8ML8/drivers/fsl_rdc.c \
+    Drivers/MIMX8ML8/drivers/fsl_i2c.c
 
 ASM_SRCS := startup/startup_MIMX8ML8_cm7.S
 
