@@ -1,0 +1,102 @@
+VERSION "Dec 11, 2023"
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: OBC VCU
+
+
+BO_ 2550588916 OBC_CMD: 8 VCU
+ SG_ OBC_MaxVoltageCMD : 7|16@0+ (0.1,0) [0|6553.5] "voltage:V" Vector__XXX
+ SG_ OBC_MaxCurrentCMD : 23|16@0+ (0.1,0) [0|6553.5] "current:A" Vector__XXX
+ SG_ OBC_ControlCMD : 33|2@0+ (1,0) [0|3] "" Vector__XXX
+ SG_ OBC_ModeCMD : 40|1@0+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2566869221 OBC_State: 8 OBC
+ SG_ OBC_ChargingVoltage : 7|16@0+ (0.1,0) [0|6553.5] "voltage:V" Vector__XXX
+ SG_ OBC_ChargingCurrent : 23|16@0- (0.1,0) [-3276.8|3276.7] "current:A" Vector__XXX
+ SG_ OBC_HardwareFailureStatus : 32|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ OBC_TemperatureStatus : 33|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ OBC_InputVoltageStatus : 34|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ OBC_StartStatus : 35|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ OBC_CommsStatus : 36|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ OBC_Temp : 55|8@0+ (1,-40) [-40|215] "temp:C" Vector__XXX
+
+BO_ 2550199781 DCDC_CMD: 8 VCU
+ SG_ DCDC_OutputEnableCMD : 8|1@0+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2550195701 DCDC_State: 8 OBC
+ SG_ DCDC_OverTempProtect : 8|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_OutputOverCurrentAlarm : 9|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_OutputOverVoltageAlarm : 10|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_OutputUnderVoltageAlarm : 11|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_InputOverVoltageAlarm : 12|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_InputUnderVoltageAlarm : 13|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_OutputShortCircuitProtect : 14|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_InternalFault : 15|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_CommsFault : 16|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DCDC_OutputCurrent : 24|16@1+ (0.1,0) [0|6553.5] "current:A" Vector__XXX
+ SG_ DCDC_OutputVoltage : 47|8@0+ (0.2,0) [0|51] "voltage:V" Vector__XXX
+ SG_ DCDC_OutputStatus : 55|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ DCDC_Temp : 63|8@0+ (1,-40) [-40|215] "temp:C" Vector__XXX
+
+
+
+CM_ SG_ 2550588916 OBC_MaxVoltageCMD "Allowable range is 280V to 560V DC";
+CM_ SG_ 2550588916 OBC_MaxCurrentCMD "Max allowed is 20A, 6600W. 3800W is used when input is below AC 175v";
+CM_ SG_ 2566869221 OBC_TemperatureStatus "Shuts down when temp exceeds 90C, recovery below 65C";
+CM_ SG_ 2566869221 OBC_InputVoltageStatus "Triggers when the charging voltage level exceeds AC 275v. Recovery when voltage falls below AC 265v.";
+CM_ SG_ 2550199781 DCDC_OutputEnableCMD "Turns the DC/DC output on and off";
+CM_ SG_ 2550195701 DCDC_OverTempProtect "Shuts down when temp exceeds 85C+/-5C, recovery below 75C+/-5C";
+CM_ SG_ 2550195701 DCDC_OutputOverVoltageAlarm "Triggers when the Output voltage level exceeds DC 16v. Recovery when voltage falls back below 12v.";
+CM_ SG_ 2550195701 DCDC_InputOverVoltageAlarm "Triggers when the HV input level exceeds DC 750v.;
+CM_ SG_ 2550195701 DCDC_InputUnderVoltageAlarm "Triggers when the HV input level falls below DC 192v-197v. Recovery when voltage exceeds 198v-205v.";
+VAL_ 2550588916 OBC_ControlCMD 2 "Charge Complete" 1 "Battery Protection, Charge Stopped" 0 "Charging" ;
+VAL_ 2550588916 OBC_ModeCMD 1 "Heating Mode" 0 "Charging Mode" ;
+VAL_ 2566869221 OBC_HardwareFailureStatus 1 "Fail" 0 "OK" ;
+VAL_ 2566869221 OBC_TemperatureStatus 1 "Overtemp Protect" 0 "OK" ;
+VAL_ 2566869221 OBC_InputVoltageStatus 1 "Input Voltage Protection" 0 "OK" ;
+VAL_ 2566869221 OBC_StartStatus 1 "Prevented, No Pack Voltage" 0 "Allowed" ;
+VAL_ 2566869221 OBC_CommsStatus 1 "Timeout" 0 "OK" ;
+VAL_ 2550199781 DCDC_OutputEnableCMD 1 "Enable" 0 "Disable" ;
+VAL_ 2550195701 DCDC_OverTempProtect 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_OutputOverCurrentAlarm 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_OutputOverVoltageAlarm 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_OutputUnderVoltageAlarm 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_InputOverVoltageAlarm 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_InputUnderVoltageAlarm 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_OutputShortCircuitProtect 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_InternalFault 1 "Fault" 0 "OK" ;
+VAL_ 2550195701 DCDC_CommsFault 1 "Timeout" 0 "OK" ;
+VAL_ 2550195701 DCDC_OutputStatus 1 "Off" 0 "On" ;
+

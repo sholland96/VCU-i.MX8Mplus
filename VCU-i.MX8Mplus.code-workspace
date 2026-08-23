@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"name": "VCU-i.MX8Mplus",
+			"path": "."
+		}
+	],
+	"settings": {
+		"VsCodeTaskButtons.tasks": [
+			{
+				"label": "$(tools) Build",
+				"task": "make: build",
+				"tooltip": "Run make (build task)"
+			},
+			{
+				"label": "$(trash) Clean",
+				"task": "make: clean",
+				"tooltip": "Run make clean"
+			}
+		]
+	}
+}
