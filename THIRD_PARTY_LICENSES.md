@@ -21,9 +21,8 @@ Per-file copyright holders (see each file's own header for the precise years/ent
 Freescale Semiconductor, Inc. and NXP (device headers, drivers, startup, linker scripts, CMSIS
 Core), and NXP (board/pin_mux/clock_config example files this project adapted from).
 
-No GPL-licensed code was used or referenced for this project (contrast with the sibling
-`VCU-PortentaX8` project, which read Arduino's GPLv3 firmware repo for facts only, copying no
-code — that caveat doesn't apply here since Variscite's SDK fork is BSD-3-Clause throughout).
+No GPL-licensed code was used or referenced for this project — Variscite's SDK fork is
+BSD-3-Clause throughout.
 
 ## BSD 3-Clause License text
 

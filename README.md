@@ -17,17 +17,12 @@ beyond "matches NXP/Variscite source and documentation."
 ## Why bare metal, no RTOS
 
 Matches the existing Teensy VCU's `loop()` architecture: a plain superloop, no Arduino/mbed
-ecosystem, no RTOS. This mirrors the same decision made for the (now-defunct, see below) Portenta
-X8 port of this same effort.
+ecosystem, no RTOS.
 
 ## Sibling projects
 
 - `../VCU` — the original Teensy 4.1 VCU project. Unrelated to this port beyond being the source
   of the control logic being ported.
-- `VCU-PortentaX8` — an earlier attempt at this same bare-metal port, targeting the Portenta X8's
-  STM32H747 M7 core instead. **That project's directory was lost (deleted, restore attempt
-  failed) as of 2026-08-22** — this project does not depend on it, but if you're looking for it,
-  it no longer exists on disk.
 
 ## Hardware target
 
@@ -58,8 +53,7 @@ bring-up on the M7.
 ## Toolchain
 
 NXP MCUXpresso SDK conventions/APIs (`fsl_*.c/h` drivers) — this is an NXP part, not ST, so
-STM32Cube/HAL (used for the now-lost Portenta X8 port) does not apply here. Target with
-`arm-none-eabi-gcc`.
+STM32Cube/HAL does not apply here. Target with `arm-none-eabi-gcc`.
 
 ## Sourcing and verified facts
 
@@ -70,10 +64,7 @@ MCUXpresso SDK fork:
 - Repository: `github.com/varigit/freertos-variscite`
 - Branch: `mcuxpresso_sdk_2.15.x-var02`
 - Board directory: `boards/som_mx8mp`
-- License: **BSD-3-Clause** — safe to vendor directly (see `THIRD_PARTY_LICENSES.md`). This is a
-  cleaner licensing story than the Portenta X8 port, which read Arduino's GPLv3 firmware repo for
-  facts only (no GPL code touched there either, but the fork here is permissively licensed
-  throughout).
+- License: **BSD-3-Clause** — safe to vendor directly (see `THIRD_PARTY_LICENSES.md`).
 
 Facts confirmed directly from that repo (not inferred):
 
@@ -93,10 +84,9 @@ Facts confirmed directly from that repo (not inferred):
 - Linker script choice: `MIMX8ML8xxxxx_cm7_ram.ld` (TCM-resident code/data, with a 16MB DDR
   window at `0x80000000` reserved for CM7 non-cacheable use — see the comment in `board.c`'s
   `BOARD_InitMemory`). This is correct for this boot model: the M7 doesn't power on independently
-  at reset like the STM32H747 does in the Portenta X8 port — it boots via **remoteproc**, loaded
-  and kicked by Linux/U-Boot on the A53 side, by which point DDR is already initialized. The
-  `_flash` and `_ddr_ram` linker scripts in the vendored SDK don't apply to this boot model the
-  way they would on STM32.
+  at reset — it boots via **remoteproc**, loaded and kicked by Linux/U-Boot on the A53 side, by
+  which point DDR is already initialized. The `_flash` and `_ddr_ram` linker scripts in the
+  vendored SDK don't apply to this boot model.
 
 **Not yet confirmed** — worth checking before trusting fully:
 
@@ -142,9 +132,9 @@ the initial vendoring pass.
 
 ## Flashing / deployment (not attempted, not fully researched)
 
-Unlike the STM32H747 in the Portenta X8 port (which has its own onboard J-Link-OB debugger and
-powers on independently), the i.MX 8M Plus's M7 core is typically loaded and started by Linux via
-**remoteproc** — U-Boot or the Linux remoteproc framework loads the built `.elf`/`.bin` into RAM
-and kicks the core, rather than the M7 booting standalone at power-on. The exact mechanism
+The i.MX 8M Plus's M7 core has no onboard debugger and doesn't power on independently at reset —
+it's typically loaded and started by Linux via **remoteproc** — U-Boot or the Linux remoteproc
+framework loads the built `.elf`/`.bin` into RAM and kicks the core, rather than the M7 booting
+standalone at power-on. The exact mechanism
 (U-Boot `bootaux` command vs. Linux `/sys/class/remoteproc/remoteproc0/firmware` +
 `state`) has not been worked out for the Symphony v1.4a carrier's boot configuration yet.

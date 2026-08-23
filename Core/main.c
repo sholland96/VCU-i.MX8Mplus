@@ -7,7 +7,8 @@
  * superloop, matching the architecture of the Teensy VCU project this is
  * eventually meant to host real-time control logic for. See ../README.md
  * for full sourcing/verification status before touching this file: this
- * skeleton has never been compiled or flashed to hardware.
+ * skeleton compiles and links cleanly but has never been flashed to or run
+ * on real hardware.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -81,10 +82,9 @@ int main(void)
     while (true)
     {
         /*
-         * Poll the Rx mailbox, matching the polling-superloop style of the
-         * Portenta X8 skeleton this project mirrors (no RTOS, no interrupt
-         * handles). FLEXCAN_ReadRxMb re-arms the mailbox for the next frame
-         * on success.
+         * Poll the Rx mailbox, matching the Teensy VCU's no-RTOS superloop
+         * architecture (no interrupt handles). FLEXCAN_ReadRxMb re-arms the
+         * mailbox for the next frame on success.
          */
         if (FLEXCAN_ReadRxMb(VCU_CAN, VCU_CAN_RX_MB_IDX, &rxFrame) == kStatus_Success)
         {
