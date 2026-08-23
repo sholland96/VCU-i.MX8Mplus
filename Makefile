@@ -1,12 +1,22 @@
 # VCU-i.MX8Mplus -- bare-metal CAN bring-up skeleton for the i.MX 8M Plus's
 # Cortex-M7 core (Variscite Symphony v1.4a + VAR-SOM-MX8M-PLUS).
 #
-# Never built: no arm-none-eabi-gcc toolchain in the dev environment this was
-# written in. Flags below are transcribed from Variscite's own reference
-# example build (boards/som_mx8mp/driver_examples/flexcan/interrupt_transfer/
-# armgcc/{flags,config}.cmake in github.com/varigit/freertos-variscite,
-# branch mcuxpresso_sdk_2.15.x-var02) -- treat as unverified until a real
-# build is attempted. See README.md.
+# Verified 2026-08-22 with Arm GNU Toolchain 14.2.Rel1 (arm-none-eabi-gcc
+# 14.2.1) -- builds cleanly, never flashed to hardware. Flags below are
+# transcribed from Variscite's own reference example build
+# (boards/som_mx8mp/driver_examples/flexcan/interrupt_transfer/armgcc/
+# {flags,config}.cmake in github.com/varigit/freertos-variscite, branch
+# mcuxpresso_sdk_2.15.x-var02). See README.md.
+
+# GNU Make for Windows defaults to cmd.exe for recipes, which chokes on the
+# `rm -rf`/`mkdir -p` below (they're not cmd builtins). Pin SHELL to Git for
+# Windows' bash (a safe assumption -- this repo needs git anyway) so recipes
+# behave the same whether invoked from a git-bash terminal, a plain
+# PowerShell/cmd prompt, or a VS Code task.
+ifeq ($(OS),Windows_NT)
+SHELL := C:/PROGRA~1/Git/bin/bash.exe
+.SHELLFLAGS := -c
+endif
 
 TOOLCHAIN_PREFIX ?= arm-none-eabi-
 CC      := $(TOOLCHAIN_PREFIX)gcc

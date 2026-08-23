@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "make: build",
+            "type": "shell",
+            "command": "C:\\PROGRA~1\\MICROC~1\\MPLABX\\v6.30\\gnuBins\\GnuWin32\\bin\\make.exe",
+            "args": [],
+            "options": {
+                "env": {
+                    "PATH": "C:\\PROGRA~2\\ARMGNU~1\\14EFD8~1.2RE\\bin;C:\\PROGRA~1\\MICROC~1\\MPLABX\\v6.30\\gnuBins\\GnuWin32\\bin;${env:PATH}"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "make: clean",
+            "type": "shell",
+            "command": "C:\\PROGRA~1\\MICROC~1\\MPLABX\\v6.30\\gnuBins\\GnuWin32\\bin\\make.exe",
+            "args": ["clean"],
+            "options": {
+                "env": {
+                    "PATH": "C:\\PROGRA~2\\ARMGNU~1\\14EFD8~1.2RE\\bin;C:\\PROGRA~1\\MICROC~1\\MPLABX\\v6.30\\gnuBins\\GnuWin32\\bin;${env:PATH}"
+                }
+            },
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}
