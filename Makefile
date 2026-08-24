@@ -41,6 +41,8 @@ C_SRCS := \
     Core/board.c \
     Core/pin_mux.c \
     Core/clock_config.c \
+    Core/lowpower.c \
+    Core/expansion.c \
     Drivers/MIMX8ML8/system_MIMX8ML8_cm7.c \
     Drivers/MIMX8ML8/drivers/fsl_common.c \
     Drivers/MIMX8ML8/drivers/fsl_common_arm.c \
@@ -48,7 +50,10 @@ C_SRCS := \
     Drivers/MIMX8ML8/drivers/fsl_flexcan.c \
     Drivers/MIMX8ML8/drivers/fsl_gpio.c \
     Drivers/MIMX8ML8/drivers/fsl_rdc.c \
-    Drivers/MIMX8ML8/drivers/fsl_i2c.c
+    Drivers/MIMX8ML8/drivers/fsl_i2c.c \
+    Drivers/MIMX8ML8/drivers/fsl_mu.c \
+    Drivers/MIMX8ML8/drivers/fsl_ecspi.c \
+    Drivers/MIMX8ML8/drivers/fsl_uart.c
 
 ASM_SRCS := startup/startup_MIMX8ML8_cm7.S
 

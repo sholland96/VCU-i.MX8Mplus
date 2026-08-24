@@ -13,9 +13,10 @@ adapted (adaptations are noted with a comment at the top of the file explaining 
 trimmed/changed and why). `Core/board.c`, `Core/board.h`, `Core/pin_mux.c`, `Core/pin_mux.h`,
 `Core/clock_config.c`, and `Core/clock_config.h` are adapted from
 `boards/som_mx8mp/driver_examples/flexcan/interrupt_transfer/` in the same repo/branch.
-`Core/main.c` is an original file written for this project (not derived from any NXP/Variscite
-example file line-for-line), but it calls into and follows the initialization sequence
-established by the vendored/adapted files above.
+`Core/main.c`, `Core/lowpower.c`/`Core/lowpower.h`, and `Core/expansion.c`/`Core/expansion.h` are
+original files written for this project (not derived from any NXP/Variscite example file
+line-for-line), but they call into and follow the initialization sequence established by the
+vendored/adapted files above.
 
 Per-file copyright holders (see each file's own header for the precise years/entity):
 Freescale Semiconductor, Inc. and NXP (device headers, drivers, startup, linker scripts, CMSIS

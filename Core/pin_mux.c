@@ -42,6 +42,32 @@ void BOARD_InitBootPins(void)
  * before this pin mux is trusted to mean the M7 may safely drive it.
  * External 10K pull-ups already exist on the carrier (R19/R24-27), so only
  * open-drain mode is enabled here, not the pad's internal pull.
+ *
+ * Mikroe click expansion pins (see Core/expansion.c and the project's memory
+ * file for the full derivation -- Symphony J16/J17/J30 cross-referenced
+ * against the VAR-SOM-MX8M-PLUS datasheet's per-peripheral signal tables,
+ * same method as I2C#A above). None of this hardware exists yet; these are
+ * scaffolding pin muxes only, matching Core/lowpower.c's inert pattern:
+ *   - Wake input (OPTO 3 click IN1, via Symphony J17 pin 10 = SOM pin 79):
+ *     GPIO3_IO14, alt5 on the NAND_DQS pad. Active-low (both the OPTO
+ *     click's open-drain output and this pad idle high); external pull-up
+ *     already exists on the OPTO click, so no internal pull is enabled.
+ *   - ADC9 IRQ/MDAT input (MCP3564T-E/NC, via Symphony J17 pin 3 = SOM pin
+ *     84): GPIO3_IO06, alt5 on the NAND_DATA00 pad.
+ *   - ADC9 SPI (ECSPI2, via Symphony J16 pins 2/4/6/8 = SOM pins 43/39/41/45):
+ *     native/alt0 ECSPI2_SCLK/SS0/MISO/MOSI pads -- no on-SOM buffering
+ *     quirk, unlike I2C3's alt4 path.
+ *   - LIN1/LIN2 UARTs (2x MCP2003B click, one LIN bus each): native/alt0
+ *     UART1_TXD/RXD (Symphony J18 pins 3/5 = SOM pins 124/175) for LIN1,
+ *     UART4_TXD/RXD (J18 pins 7/9 = SOM pins 171/115) for LIN2.
+ *   - LIN CS/WAKE (shared across both MCP2003B clicks -- user decided both
+ *     LIN buses always move in unison, so one CS and one WAKE line drives
+ *     both boards' click sockets in parallel; see the project's memory file
+ *     for the tradeoff this accepts): GPIO4_IO14/IO15, alt5 on the
+ *     SAI1_TXD2/SAI1_TXD3 pads, via Symphony J30 (Extension Connector)
+ *     pins 4/6 = SOM pins 56/55. J30 repurposes the second-Ethernet-PHY
+ *     RGMII bus via on-board isolation resistors -- NOT YET CONFIRMED those
+ *     resistors are actually populated on this board; see README.md.
  */
 void BOARD_InitPins(void)
 {
@@ -70,4 +96,65 @@ void BOARD_InitPins(void)
                          IOMUXC_SW_PAD_CTL_PAD_DSE(1U) |
                          IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
                          IOMUXC_SW_PAD_CTL_PAD_ODE_MASK);
+
+    /* Wake input (GPIO3_IO14) and ADC9 IRQ input (GPIO3_IO06): plain inputs, external pull-ups
+     * already exist on their respective click boards, so no internal pull is enabled here. */
+    IOMUXC_SetPinMux(IOMUXC_NAND_DQS_GPIO3_IO14, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_NAND_DQS_GPIO3_IO14, IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_NAND_DATA00_GPIO3_IO06, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_NAND_DATA00_GPIO3_IO06,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK);
+
+    /* ADC9 SPI (ECSPI2). */
+    IOMUXC_SetPinMux(IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_ECSPI2_SS0_ECSPI2_SS0, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_ECSPI2_SS0_ECSPI2_SS0,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_ECSPI2_MISO_ECSPI2_MISO, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_ECSPI2_MISO_ECSPI2_MISO,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    /* LIN1 UART (UART1). */
+    IOMUXC_SetPinMux(IOMUXC_UART1_TXD_UART1_TX, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_UART1_TXD_UART1_TX,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_UART1_RXD_UART1_RX, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_UART1_RXD_UART1_RX,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    /* LIN2 UART (UART4). */
+    IOMUXC_SetPinMux(IOMUXC_UART4_TXD_UART4_TX, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_UART4_TXD_UART4_TX,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_UART4_RXD_UART4_RX, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_UART4_RXD_UART4_RX,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK |
+                         IOMUXC_SW_PAD_CTL_PAD_PUE_MASK | IOMUXC_SW_PAD_CTL_PAD_PE_MASK);
+
+    /* Shared LIN CS/WAKE outputs (GPIO4_IO14/IO15). */
+    IOMUXC_SetPinMux(IOMUXC_SAI1_TXD2_GPIO4_IO14, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_SAI1_TXD2_GPIO4_IO14,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK);
+
+    IOMUXC_SetPinMux(IOMUXC_SAI1_TXD3_GPIO4_IO15, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_SAI1_TXD3_GPIO4_IO15,
+                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) | IOMUXC_SW_PAD_CTL_PAD_FSEL_MASK);
 }
