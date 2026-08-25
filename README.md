@@ -6,18 +6,20 @@ Symphony carrier board, revision v1.4a**.
 
 **Status: skeleton only, CAN bring-up + D10 heartbeat LED + inert low-power and click-board
 expansion building blocks. Compiles and links cleanly, never flashed to hardware.** Verified
-2026-08-23 with Arm GNU Toolchain 14.2.Rel1 (`arm-none-eabi-gcc` 14.2.1) — `make` builds
+2026-08-24 with Arm GNU Toolchain 14.2.Rel1 (`arm-none-eabi-gcc` 14.2.1) — `make` builds
 `build/vcu-imx8mp.elf` and `.bin` with zero errors (only the expected nano.specs stub warnings
 for unimplemented syscalls like `_read`/`_write`, which this firmware never calls, plus a
 harmless "LOAD segment with RWX permissions" linker note). Text+data fits comfortably within the
-TCM budget (~25KB used of 127KB `m_text`, ~2.5KB of 128KB `m_data`). Note the asymmetry: pin mux
-changes execute unconditionally at boot (`BOARD_InitPins()` always runs, same as the existing
-CAN/I2C3 pins), so the ~12 new expansion pins are actively reconfigured even though nothing
-uses them yet -- but `Core/lowpower.c`, `Core/expansion.c`, `fsl_mu.c`, `fsl_ecspi.c`, and
-`fsl_uart.c` add zero bytes to that total, since none of their functions are called from `main()`
-yet and the linker garbage-collects them out. A clean build is still not the same as a working
-one: **nothing has been flashed to or run on real hardware**, so treat the peripheral bring-up
-logic itself (clock tree, pin mux, FLEXCAN2 config, I2C3/PCA9534 config, MU low-power
+TCM budget (~25KB used of 127KB `m_text`, ~2.5KB of 128KB `m_data`). **Pin muxing is RDC-gated
+per peripheral, not unconditional** (see "Sourcing and verified facts" below for why this
+changed 2026-08-24) — `BOARD_InitPins()` itself is empty; `BOARD_InitCanPins()`/
+`BOARD_InitI2c3Pins()`/etc. only run if that specific peripheral's own RDC check passes, so
+nothing gets muxed for a peripheral the M7 doesn't actually have access to. `Core/lowpower.c`,
+`Core/expansion.c`, `fsl_mu.c`, `fsl_ecspi.c`, and `fsl_uart.c` still add zero bytes to the build
+today, since none of their functions are called from `main()` yet and the linker garbage-collects
+them out. A clean build is still not the same as a working one: **nothing has been flashed to or
+run on real hardware**, so treat the peripheral bring-up logic itself (clock tree, pin mux,
+FLEXCAN2 config, I2C3/PCA9534 config, MU low-power
 scaffolding, ECSPI2/UART1/UART4/GPIO expansion scaffolding) as unverified beyond "matches
 NXP/Variscite source and documentation."
 
@@ -154,33 +156,78 @@ root as `AN13400 - i.MX 8M Low Power Design.pdf`), not inferred:
   per-core IMR blocks) needs confirming against the i.MX 8M Plus Reference Manual's GPC chapter
   and real hardware, not hand-waved from the app note's ATF-side pseudocode alone.
 
-**Not yet confirmed** — worth checking before trusting fully:
+## Live hardware findings (2026-08-24)
+
+The Symphony kit arrived and was inspected directly (SSH root access, no password; serial console
+on the debug UART; U-Boot interrupted at the prompt). This superseded several assumptions below:
+
+- **Stock image**: NXP i.MX Release Distro 5.4-zeus (Yocto), kernel `5.4.70-imx8mp`, built
+  2021-03-11. U-Boot `2020.04-imx_v2020.04_5.4.70_2.3.0_var01+g91a13e88c9`, same build train.
+  Board model string confirms "Variscite VAR-SOM-MX8M-PLUS on Symphony-Board" exactly.
+- **`bootaux <address> [<core>]` is available in U-Boot** — loading/running this firmware needs
+  no Linux kernel or remoteproc changes at all (this kernel/DT has no remoteproc support
+  whatsoever — `/sys/class/remoteproc/` doesn't exist, nothing in the device tree matches
+  `fsl,imx8mp-cm7`/`imx-rproc`/`fsl,rpmsg`). `bootaux` is the actual path to running this
+  firmware, not a kernel rebuild.
+- **Corrected**: earlier revisions of this README assumed FLEXCAN2 was already excluded from
+  Linux the way a properly-configured M7 board would be. **That's wrong on this stock image.**
+  The running device tree shows FLEXCAN2 (`can@308d0000`) as `status = "okay"`, bound to a
+  `can0` interface (confirmed via `dmesg`). I2C3, ECSPI2, UART1, and UART4 are all `"okay"` too.
+  Only FLEXCAN1 (`can@308c0000`, not physically wired to this carrier's transceiver — see below)
+  is `"disabled"`. So as shipped, **every peripheral this project targets is Linux-claimed**, and
+  the RDC checks throughout this firmware will very likely find nothing granted until the Linux
+  device tree is patched to release them. That patching hasn't happened yet.
+- **Independently re-verified FLEXCAN2 is still the physically-correct peripheral**, not a
+  mistake carried over from the SDK example: traced the carrier's actual `FLEXCAN#A_TX`/
+  `FLEXCAN#A_RX` nets (same schematic bounding-box method used for I2C3/SPI/UART below) — they
+  land on SOM pins 44/46, balls AE6/AJ4, exactly matching this project's existing pin mux. Linux
+  and this firmware both want the same physical CAN bus; FLEXCAN1 being free is moot since
+  nothing on the carrier is wired to it.
+- **Confirmed via the Reference Manual (also in the repo root, gitignored for size) that IOMUXC
+  pin muxing is NOT protected by the same RDC gates as the peripherals themselves** —
+  `RDC_PDAPn` registers reset to full access for all domains (section 3.2.5.6), and pin muxing
+  isn't normally locked down the way live peripheral register blocks are. This meant the
+  firmware's previous unconditional `BOARD_InitPins()` could have silently reconfigured pins
+  Linux's pinctrl driver was actively using, even where the RDC gate correctly prevented the M7
+  from using the peripheral itself. **Fixed**: pin muxing was split into per-peripheral functions
+  (`BOARD_InitCanPins`, `BOARD_InitI2c3Pins`, etc. — see `pin_mux.h`), each called only from
+  inside that peripheral's own RDC-gated init path. `BOARD_InitPins()` itself is now empty.
+- Incident: accidentally powered off the board via `echo o > /proc/sysrq-trigger` while probing
+  reboot mechanisms (`o` = immediate poweroff, not reboot). Recovered with a physical power
+  cycle, no lasting harm. Use `systemctl reboot`/`systemctl poweroff` instead — sysrq's other
+  single-character commands are similarly unforgiving (immediate crash/kdump, unsynced reboot,
+  etc.), don't invoke them without knowing the exact effect first.
+- Since D10 (via I2C3) and CAN will very likely both come back RDC-denied on the stock image,
+  `main.c` now also blinks a **temporary diagnostic** raw GPIO output (`GPIO3_IO14`, Symphony J17
+  pin 10 — the same pin later used for the OPTO 3 wake input) once a second, RDC-gated on GPIO3
+  like everything else. This exists purely so a first `bootaux` test has *some* visible
+  confirmation the M7 core is actually running, since GPIO isn't gated the same way shared-bus
+  peripherals are. Nothing is physically wired to this pin yet — check with a multimeter or a
+  clipped-on LED+resistor. Remove once D10 or another confirmed-working indicator makes this
+  unnecessary.
+
+**Still not yet confirmed**:
 
 - Whether `boards/som_mx8mp` in this SDK fork represents the SOM specifically on the **Symphony
   v1.4a** carrier, or a different/generic Variscite carrier — the SDK board name doesn't
-  distinguish carrier revisions. Check against Variscite's published Symphony v1.4a schematic
-  (variscite.com) before trusting the pin assignments against real hardware.
-- The `AJ4`/`AE6` pin assignments above are from the SDK's pin_mux generator, not pin-traced with
-  a meter against the actual carrier's CAN connector.
-- **Whether the M7 actually has RDC access to I2C3 at all.** `BOARD_RdcInit()` only moves the M7
-  *core* into RDC domain 1 — it does not reassign individual peripherals. FLEXCAN2 works because
-  Variscite's own device tree (`imx8mp-var-common-m7.dtsi`) already excludes it from Linux and
-  grants the M7 domain access; there is **no equivalent confirmation for I2C3**. The GPIO
-  expander on this bus also drives board-housekeeping signals Linux almost certainly still
-  manages, so sharing it uncoordinated risks bus contention. `main.c` guards against this with an
-  `RDC_GetPeriphAccessPolicy()` check before ever touching I2C3 — if the M7's domain hasn't been
-  granted read+write access, the LED code silently does nothing rather than assume the bus is
-  free. Whether that check ever actually passes on real hardware is unverified.
+  distinguish carrier revisions.
+- Whether the M7's RDC domain will actually be granted access to any of CAN_FD2/I2C3/ECSPI2/
+  UART1/UART4/GPIO3/GPIO4 without device-tree changes — per the live findings above, almost
+  certainly not yet, on the stock image. The RDC checks throughout this firmware (and, as of
+  2026-08-24, the pin muxing gated behind them) exist for exactly this reason: to fail safe
+  rather than assume.
+- Whether J30's isolation resistors are populated on this specific board (gates the shared LIN
+  CS/WAKE lines) — not yet physically inspected.
 
 ## Click-board expansion (scaffolding only, not wired in)
 
 `Core/expansion.c/h` brings up the M7-side peripherals for the Mikroe click boards planned for
 this project (schematics for all of them are in the repo root): a wake input, an ADC, and two
 LIN transceivers. Like `lowpower.c`, none of this hardware exists yet — every function here
-compiles and links (verified 2026-08-23) but nothing calls any of it from `main()`, so it's fully
-inert (the linker garbage-collects it out of the built image). The **pin mux for these pins does
-run unconditionally at boot**, though — same as the existing CAN/I2C3 pins, `BOARD_InitPins()`
-always executes, so this isn't purely inert the way the peripheral init functions are.
+compiles and links (verified 2026-08-24) but nothing calls any of it from `main()`, so it's fully
+inert (the linker garbage-collects it out of the built image), **including the pin mux** — each
+`BOARD_Init*Pins()` call lives inside its peripheral's own RDC-gated init function (see
+"Sourcing and verified facts" below), so a pin only gets touched by code that's actually reached.
 
 Pin identification for all of this came from cross-referencing the actual Mikroe click schematics
 (OPTO 3, Shuttle, ADC 9, MCP2003B — all in the repo root) against the Symphony carrier's
@@ -229,14 +276,17 @@ Makefile         arm-none-eabi-gcc build, never run
 ```
 
 `Core/main.c` brings up memory/MPU (`BOARD_InitMemory`), RDC domain isolation
-(`BOARD_RdcInit`), pins, clocks, then configures FLEXCAN2 for classic CAN at 500kbit/s (matching
-the Teensy VCU's bus speed) and polls one Rx mailbox in a superloop — deliberately minimal,
+(`BOARD_RdcInit`), clocks, then — only if RDC grants access — pin-muxes and configures FLEXCAN2
+for classic CAN at 500kbit/s (matching the Teensy VCU's bus speed) and polls one Rx mailbox in a
+superloop — deliberately minimal,
 matching the "CAN bring-up only" scope of the initial skeleton (no CAN FD, no interrupt-handle
 based transfers, no RTOS). It also brings up SysTick (1ms tick) and, if the RDC grants I2C3
 access, the D10 heartbeat LED (a PCA9534 GPIO expander pin, toggled every 500ms) — both
-non-blocking, so neither ever stalls the CAN Rx poll. `Core/lowpower.c/h` (see "Sleep/wake
-architecture" above) and `Core/expansion.c/h` (see "Click-board expansion" above) sit alongside
-it but aren't called from `main()` yet.
+non-blocking, so neither ever stalls the CAN Rx poll. It also blinks a temporary diagnostic GPIO
+heartbeat (see "Live hardware findings" above) so a first hardware test has visible confirmation
+the M7 is running even when CAN/I2C3 both come back RDC-denied. `Core/lowpower.c/h` (see
+"Sleep/wake architecture" above) and `Core/expansion.c/h` (see "Click-board expansion" above) sit
+alongside it but aren't called from `main()` yet.
 
 ## Building
 

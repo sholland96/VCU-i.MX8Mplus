@@ -14,6 +14,7 @@
 #include "board.h"
 #include "clock_config.h"
 #include "expansion.h"
+#include "pin_mux.h"
 
 #define VCU_WAKE_GPIO      GPIO3
 #define VCU_WAKE_GPIO_PIN  14U /* GPIO3_IO14 */
@@ -45,6 +46,7 @@ bool VCU_Expansion_WakeInputInit(void)
         return false;
     }
 
+    BOARD_InitWakeInputPin();
     GPIO_PinInit(VCU_WAKE_GPIO, VCU_WAKE_GPIO_PIN, &config);
     return true;
 }
@@ -63,6 +65,8 @@ bool VCU_Expansion_Adc9Init(void)
     {
         return false;
     }
+
+    BOARD_InitAdc9Pins();
 
     CLOCK_SetRootMux(kCLOCK_RootEcspi2, kCLOCK_EcspiRootmuxOsc24M);
     CLOCK_SetRootDivider(kCLOCK_RootEcspi2, 1U, 1U);
@@ -101,6 +105,7 @@ bool VCU_Expansion_Lin1Init(void)
         return false;
     }
 
+    BOARD_InitLin1Pins();
     return VCU_Expansion_UartInit(VCU_LIN1_UART, kCLOCK_RootUart1, kCLOCK_Uart1ClkRoot);
 }
 
@@ -111,6 +116,7 @@ bool VCU_Expansion_Lin2Init(void)
         return false;
     }
 
+    BOARD_InitLin4Pins();
     return VCU_Expansion_UartInit(VCU_LIN2_UART, kCLOCK_RootUart4, kCLOCK_Uart4ClkRoot);
 }
 
@@ -123,6 +129,7 @@ bool VCU_Expansion_LinControlInit(void)
         return false;
     }
 
+    BOARD_InitLinControlPins();
     GPIO_PinInit(VCU_LIN_CS_GPIO, VCU_LIN_CS_PIN, &config);
     GPIO_PinInit(VCU_LIN_WAKE_GPIO, VCU_LIN_WAKE_PIN, &config);
     return true;
